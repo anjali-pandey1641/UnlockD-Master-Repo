@@ -3,6 +3,7 @@ from flask_cors import CORS
 from schema import create_tables
 from routes.transaction import transactions
 from routes.budget import budgets
+from routes.groups import groups
 app = Flask(__name__)
 CORS(app)
 
@@ -10,6 +11,7 @@ create_tables()
 
 app.register_blueprint(transactions)
 app.register_blueprint(budgets)
+app.register_blueprint(groups)
 
 @app.get("/")
 def home():

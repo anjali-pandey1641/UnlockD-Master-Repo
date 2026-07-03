@@ -23,6 +23,12 @@ def create_tables():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
+    cur.execute("""
+CREATE TABLE IF NOT EXISTS groups (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+""")
 
     cur.execute("""
     ALTER TABLE transactions
@@ -40,7 +46,44 @@ def create_tables():
         budget_year INTEGER NOT NULL
     );
     """)
+    cur.execute("""
+CREATE TABLE IF NOT EXISTS group_members(
+    id SERIAL PRIMARY KEY,
+    group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
+    account_id INTEGER REFERENCES accounts(id)
+);
+""")
+    cur.execute("""
+CREATE TABLE IF NOT EXISTS expenses(
+    id SERIAL PRIMARY KEY,
+    group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
+    payer_id INTEGER REFERENCES accounts(id),
+    description VARCHAR(255),
+    amount NUMERIC(12,2) NOT NULL,
+    split_type VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+""")
 
+    cur.execute("""
+CREATE TABLE IF NOT EXISTS expense_splits(
+    id SERIAL PRIMARY KEY,
+    expense_id INTEGER REFERENCES expenses(id) ON DELETE CASCADE,
+    account_id INTEGER REFERENCES accounts(id),
+    amount NUMERIC(12,2) NOT NULL,
+    paid BOOLEAN DEFAULT FALSE
+);
+""")
+    cur.execute("""
+CREATE TABLE IF NOT EXISTS settlements(
+    id SERIAL PRIMARY KEY,
+    group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
+    from_account INTEGER REFERENCES accounts(id),
+    to_account INTEGER REFERENCES accounts(id),
+    amount NUMERIC(12,2) NOT NULL,
+    paid BOOLEAN DEFAULT FALSE
+);
+""")
     conn.commit()
 
     cur.close()

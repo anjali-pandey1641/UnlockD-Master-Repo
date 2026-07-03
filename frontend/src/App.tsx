@@ -17,7 +17,23 @@ function App() {
   const [budgetAccount, setBudgetAccount] = useState("");
   const [budgetCategory, setBudgetCategory] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
+  const [groups, setGroups] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [settlements, setSettlements] = useState<any[]>([]);
 
+  const [groupName, setGroupName] = useState("");
+  const [groupId, setGroupId] = useState("");
+  const [memberAccount, setMemberAccount] = useState("");
+
+  const [expenseGroup, setExpenseGroup] = useState("");
+  const [payerId, setPayerId] = useState("");
+  const [description, setDescription] = useState("");
+  const [expenseAmount, setExpenseAmount] = useState("");
+  const [splitType, setSplitType] = useState("equal");
+
+  const [custom1, setCustom1] = useState("");
+  const [custom2, setCustom2] = useState("");
+  const [custom3, setCustom3] = useState("");
   async function fetchAccounts() {
     const response = await fetch("http://localhost:5000/accounts");
     const data = await response.json();
@@ -35,30 +51,46 @@ function App() {
     const data = await response.json();
     setBudgets(data);
   }
+  async function fetchGroups() {
+  const response = await fetch("http://localhost:5000/groups");
+  const data = await response.json();
+  setGroups(data);
+}
 
+async function fetchMembers(id: number) {
+  const response = await fetch(`http://localhost:5000/groups/${id}/members`);
+  const data = await response.json();
+  setMembers(data);
+}
+
+async function fetchSettlements(id: number) {
+  const response = await fetch(`http://localhost:5000/groups/${id}/settlements/db`);
+  const data = await response.json();
+  setSettlements(data);
+}
   async function createAccount() {
-    const response = await fetch("http://localhost:5000/accounts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name,
-        balance: Number(balance),
-      }),
-    });
+  const response = await fetch("http://localhost:5000/accounts", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name,
+      balance: Number(balance),
+    }),
+  });
 
-    if (response.ok) {
-      setName("");
-      setBalance("");
+  if (response.ok) {
+    setName("");
+    setBalance("");
 
-      fetchAccounts();
-      fetchTransactions();
-      fetchBudgets();
-    } else {
-      alert("Failed to create account");
-    }
+    fetchAccounts();
+    fetchTransactions();
+    fetchBudgets();
+  } else {
+    alert("Failed to create account");
   }
+}
 
   async function createBudget() {
     const response = await fetch("http://localhost:5000/budgets", {
@@ -119,12 +151,115 @@ function App() {
       alert("Transfer failed");
     }
   }
+async function createGroup() {
+  const response = await fetch("http://localhost:5000/groups", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: groupName,
+    }),
+  });
 
+  if (response.ok) {
+    setGroupName("");
+    fetchGroups();
+  } else {
+    alert("Failed to create group");
+  }
+}
+
+async function addMember() {
+  const response = await fetch(
+    `http://localhost:5000/groups/${groupId}/members`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account_id: Number(memberAccount),
+      }),
+    }
+  );
+
+  if (response.ok) {
+    setMemberAccount("");
+    fetchMembers(Number(groupId));
+  } else {
+    alert("Failed to add member");
+  }
+}
+
+async function createExpense() {
+  const body: any = {
+    payer_id: Number(payerId),
+    description,
+    amount: Number(expenseAmount),
+    split_type: splitType,
+  };
+
+  if (splitType === "custom") {
+    body.splits = [
+      {
+        account_id: 1,
+        amount: Number(custom1),
+      },
+      {
+        account_id: 2,
+        amount: Number(custom2),
+      },
+      {
+        account_id: 3,
+        amount: Number(custom3),
+      },
+    ];
+  }
+
+  const response = await fetch(
+    `http://localhost:5000/groups/${expenseGroup}/expenses`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (response.ok) {
+  alert("Expense Created");
+
+  setExpenseGroup("");
+  setPayerId("");
+  setDescription("");
+  setExpenseAmount("");
+  setCustom1("");
+  setCustom2("");
+  setCustom3("");
+} else {
+  alert("Failed");
+}
+}
+async function generateSettlements() {
+  await fetch(`http://localhost:5000/groups/${groupId}/settlements`);
+  fetchSettlements(Number(groupId));
+}
+
+async function markPaid(id: number) {
+  await fetch(`http://localhost:5000/settlements/${id}/pay`, {
+    method: "POST",
+  });
+
+  fetchSettlements(Number(groupId));
+}
   useEffect(() => {
-    fetchAccounts();
-    fetchTransactions();
-    fetchBudgets();
-  }, []);
+  fetchAccounts();
+  fetchTransactions();
+  fetchBudgets();
+  fetchGroups();
+}, []);
 
   return (
     <div className="container">
@@ -147,6 +282,138 @@ function App() {
       />
 
       <button onClick={createAccount}>Create Account</button>
+      <hr />
+
+<h2>Create Group</h2>
+
+<input
+  placeholder="Group Name"
+  value={groupName}
+  onChange={(e) => setGroupName(e.target.value)}
+/>
+
+<button onClick={createGroup}>Create Group</button>
+
+<h2>Groups</h2>
+
+{groups.map((g: any) => (
+  <div key={g.id}>
+    <b>#{g.id}</b> {g.name}
+  </div>
+))}
+
+<hr />
+
+<h2>Add Member</h2>
+
+<input
+  placeholder="Group ID"
+  value={groupId}
+  onChange={(e) => setGroupId(e.target.value)}
+/>
+
+<input
+  placeholder="Account ID"
+  value={memberAccount}
+  onChange={(e) => setMemberAccount(e.target.value)}
+/>
+
+<button onClick={addMember}>Add Member</button>
+
+<button onClick={() => fetchMembers(Number(groupId))}>
+  Load Members
+</button>
+
+{members.map((m: any) => (
+  <div key={m.account_id}>
+    👤 Account #{m.account_id}
+  </div>
+))}
+
+<hr />
+
+<h2>Create Expense</h2>
+
+<input
+  placeholder="Group ID"
+  value={expenseGroup}
+  onChange={(e) => setExpenseGroup(e.target.value)}
+/>
+
+<input
+  placeholder="Payer ID"
+  value={payerId}
+  onChange={(e) => setPayerId(e.target.value)}
+/>
+
+<input
+  placeholder="Description"
+  value={description}
+  onChange={(e) => setDescription(e.target.value)}
+/>
+
+<input
+  placeholder="Amount"
+  value={expenseAmount}
+  onChange={(e) => setExpenseAmount(e.target.value)}
+/>
+
+<select
+  value={splitType}
+  onChange={(e) => setSplitType(e.target.value)}
+>
+  <option value="equal">Equal</option>
+  <option value="custom">Custom</option>
+</select>
+
+{splitType === "custom" && (
+  <>
+    <input
+      placeholder="Account 1 Amount"
+      value={custom1}
+      onChange={(e) => setCustom1(e.target.value)}
+    />
+
+    <input
+      placeholder="Account 2 Amount"
+      value={custom2}
+      onChange={(e) => setCustom2(e.target.value)}
+    />
+
+    <input
+      placeholder="Account 3 Amount"
+      value={custom3}
+      onChange={(e) => setCustom3(e.target.value)}
+    />
+  </>
+)}
+
+<button onClick={createExpense}>
+  Create Expense
+</button>
+
+<hr />
+
+<h2>Settlements</h2>
+
+<button onClick={generateSettlements}>
+  Generate Settlements
+</button>
+
+{settlements.map((s: any) => (
+  <div key={s.id}>
+    From Account #{s.from} → Account #{s.to}
+ | ₹{s.amount}
+ | {s.paid ? "✅ Paid" : "❌ Pending"}
+    {!s.paid && (
+      <button onClick={() => markPaid(s.id)}>
+        Mark Paid
+      </button>
+    )}
+  </div>
+))}
+
+<hr />
 
       <hr />
 
