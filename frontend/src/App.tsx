@@ -21,7 +21,7 @@ function App() {
   const [groups, setGroups] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [settlements, setSettlements] = useState<any[]>([]);
-
+  const [file, setFile] = useState<File | null>(null);
   const [groupName, setGroupName] = useState("");
   const [groupId, setGroupId] = useState("");
   const [memberAccount, setMemberAccount] = useState("");
@@ -73,6 +73,24 @@ function App() {
     );
     const data = await response.json();
     setSettlements(data);
+  }
+  async function importStatement() {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("http://localhost:5000/transactions/import", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (response.ok) {
+      alert("Imported!");
+      fetchTransactions();
+    } else {
+      alert("Import failed");
+    }
   }
   async function createAccount() {
     const response = await fetch("http://localhost:5000/accounts", {
@@ -541,7 +559,49 @@ function App() {
       />
 
       <h2>Transactions</h2>
+      <hr />
 
+      <h2>Transaction Import & Analytics</h2>
+
+      <input
+        type="file"
+        accept=".csv"
+        onChange={(e) => {
+          if (e.target.files) {
+            setFile(e.target.files[0]);
+          }
+        }}
+      />
+
+      <button onClick={importStatement}>Import Statement</button>
+
+      <button>Generate Analytics</button>
+
+      <h3>Analytics Summary</h3>
+
+      <p>Total Transactions: {transactions.length}</p>
+
+      <p>
+        Total Spending: ₹
+        {transactions.reduce((sum, tx) => sum + Number(tx.amount), 0)}
+      </p>
+
+      <p>
+        Food Transactions:{" "}
+        {transactions.filter((tx) => tx.category === "Food").length}
+      </p>
+
+      <p>
+        Most Used Category:{" "}
+        {transactions.length === 0
+          ? "N/A"
+          : Object.entries(
+              transactions.reduce((acc: any, tx: any) => {
+                acc[tx.category] = (acc[tx.category] || 0) + 1;
+                return acc;
+              }, {}),
+            ).sort((a: any, b: any) => b[1] - a[1])[0][0]}
+      </p>
       {transactions.length === 0 ? (
         <p>No transactions yet.</p>
       ) : (

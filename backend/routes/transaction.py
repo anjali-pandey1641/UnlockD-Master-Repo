@@ -1,8 +1,9 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from db import get_connection
 import csv
 from io import StringIO
 from flask import Response
+import io
 
 transactions = Blueprint("transactions", __name__)
 
@@ -304,3 +305,60 @@ def export_transactions():
             "attachment; filename=transactions.csv"
         }
     )
+@transactions.post("/transactions/import")
+def import_transactions():
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files["file"]
+
+    stream = io.StringIO(file.stream.read().decode("utf-8"))
+    reader = csv.DictReader(stream)
+
+    conn, cur = get_connection()
+
+    imported = 0
+
+    try:
+        for row in reader:
+            cur.execute(
+                """
+                INSERT INTO transactions
+                (
+                    sender_id,
+                    receiver_id,
+                    amount,
+                    category,
+                    description,
+                    merchant,
+                    status
+                )
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+                """,
+                (
+                    int(row["sender_id"]),
+                    int(row["receiver_id"]),
+                    float(row["amount"]),
+                    row["category"],
+                    row.get("description"),
+                    row.get("merchant"),
+                    "IMPORTED"
+                )
+            )
+
+            imported += 1
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Import successful",
+            "count": imported
+        })
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
