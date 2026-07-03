@@ -4,6 +4,7 @@ import csv
 from io import StringIO
 from flask import Response
 import io
+from decimal import Decimal
 
 transactions = Blueprint("transactions", __name__)
 
@@ -16,16 +17,23 @@ def get_transactions():
     category = request.args.get("category", "")
 
     cur.execute("""
-    SELECT id,
-        sender_id,
-        receiver_id,
-        amount,
-        category,
-        description,
-        merchant,
-        status,
-        created_at
-    FROM transactions
+    SELECT
+    t.id,
+    t.sender_id,
+    s.name AS sender_name,
+    t.receiver_id,
+    r.name AS receiver_name,
+    t.amount,
+    t.category,
+    t.description,
+    t.merchant,
+    t.status,
+    t.created_at
+FROM transactions t
+JOIN accounts s
+    ON t.sender_id = s.id
+JOIN accounts r
+    ON t.receiver_id = r.id
     WHERE
     (
         COALESCE(description, '') ILIKE %s
@@ -56,13 +64,15 @@ def get_transactions():
         data.append({
         "id": row[0],
         "sender_id": row[1],
-        "receiver_id": row[2],
-        "amount": float(row[3]),
-        "category": row[4],
-        "description": row[5],
-        "merchant": row[6],
-        "status": row[7],
-        "created_at": str(row[8])
+        "sender_name": row[2],
+        "receiver_id": row[3],
+        "receiver_name": row[4],
+        "amount": float(row[5]),
+        "category": row[6],
+        "description": row[7],
+        "merchant": row[8],
+        "status": row[9],
+        "created_at": str(row[10]),
     })
 
     return jsonify(data)
@@ -101,7 +111,7 @@ def get_accounts():
 def create_account():
     data = request.get_json()
     name = data["name"]
-    balance = float(data["balance"])
+    balance = Decimal(data["balance"])
 
     conn, cur = get_connection()
 
@@ -139,7 +149,7 @@ def transfer():
 
     sender = data["sender_id"]
     receiver = data["receiver_id"]
-    amount = float(data["amount"])
+    amount = Decimal(data["amount"])
     category = data["category"]
 
     description = data.get("description")
@@ -237,8 +247,8 @@ def transfer():
         warning = None
 
         if budget:
-            monthly_limit = float(budget[0])
-            spent = float(budget[1])
+            monthly_limit = Decimal(budget[0])
+            spent = Decimal(budget[1])
 
             if spent >= monthly_limit * 0.8:
                 warning = "Budget nearly exhausted"

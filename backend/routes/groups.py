@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from db import get_connection
+from decimal import Decimal
 groups = Blueprint("groups", __name__)
 @groups.post("/groups")
 def create_group():
@@ -108,7 +109,7 @@ def create_expense(group_id):
 
     payer_id = data["payer_id"]
     description = data["description"]
-    amount = float(data["amount"])
+    amount = Decimal(data["amount"])
     split_type = data["split_type"]
 
     conn, cur = get_connection()

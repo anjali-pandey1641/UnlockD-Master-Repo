@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from db import get_connection
 from datetime import datetime
+from decimal import Decimal
 
 budgets = Blueprint("budgets", __name__)
 
@@ -11,7 +12,7 @@ def create_budget():
 
     account_id = data["account_id"]
     category = data["category"]
-    monthly_limit = float(data["monthly_limit"])
+    Decimal(data["monthly_limit"])
 
     now = datetime.now()
 
