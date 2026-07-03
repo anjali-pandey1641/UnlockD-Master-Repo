@@ -18,8 +18,26 @@ def create_tables():
         sender_id INTEGER REFERENCES accounts(id),
         receiver_id INTEGER REFERENCES accounts(id),
         amount NUMERIC(12,2) NOT NULL,
+        category VARCHAR(100),
         status VARCHAR(30),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    cur.execute("""
+    ALTER TABLE transactions
+    ADD COLUMN IF NOT EXISTS category VARCHAR(100);
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS budgets(
+        id SERIAL PRIMARY KEY,
+        account_id INTEGER REFERENCES accounts(id),
+        category VARCHAR(100) NOT NULL,
+        monthly_limit NUMERIC(12,2) NOT NULL,
+        spent NUMERIC(12,2) DEFAULT 0,
+        budget_month INTEGER NOT NULL,
+        budget_year INTEGER NOT NULL
     );
     """)
 

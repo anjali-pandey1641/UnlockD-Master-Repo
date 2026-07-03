@@ -9,15 +9,16 @@ def get_transactions():
     conn, cur = get_connection()
 
     cur.execute("""
-        SELECT id,
-               sender_id,
-               receiver_id,
-               amount,
-               status,
-               created_at
-        FROM transactions
-        ORDER BY created_at DESC
-    """)
+    SELECT id,
+           sender_id,
+           receiver_id,
+           amount,
+           category,
+           status,
+           created_at
+    FROM transactions
+    ORDER BY created_at DESC
+""")
 
     rows = cur.fetchall()
 
@@ -32,11 +33,13 @@ def get_transactions():
             "sender_id": row[1],
             "receiver_id": row[2],
             "amount": float(row[3]),
-            "status": row[4],
-            "created_at": str(row[5])
+            "category": row[4],
+            "status": row[5],
+            "created_at": str(row[6])
         })
 
     return jsonify(data)
+
 
 @transactions.get("/accounts")
 def get_accounts():
@@ -111,6 +114,7 @@ def transfer():
     sender = data["sender_id"]
     receiver = data["receiver_id"]
     amount = float(data["amount"])
+    category = data["category"]
 
     if amount <= 0:
         return jsonify({"error": "Amount must be greater than zero"}), 400
@@ -157,16 +161,48 @@ def transfer():
         cur.execute(
             """
             INSERT INTO transactions
-            (sender_id, receiver_id, amount, status)
-            VALUES (%s, %s, %s, %s)
+            (sender_id, receiver_id, amount, category, status)
+            VALUES (%s, %s, %s, %s, %s)
             """,
-            (sender, receiver, amount, "SUCCESS")
+            (sender, receiver, amount, category, "SUCCESS")
         )
+
+        cur.execute(
+            """
+            UPDATE budgets
+            SET spent = spent + %s
+            WHERE account_id = %s
+              AND category = %s
+            """,
+            (amount, sender, category)
+        )
+
+        cur.execute(
+            """
+            SELECT monthly_limit, spent
+            FROM budgets
+            WHERE account_id = %s
+              AND category = %s
+            """,
+            (sender, category)
+        )
+
+        budget = cur.fetchone()
+
+        warning = None
+
+        if budget:
+            monthly_limit = float(budget[0])
+            spent = float(budget[1])
+
+            if spent >= monthly_limit * 0.8:
+                warning = "Budget nearly exhausted"
 
         conn.commit()
 
         return jsonify({
-            "message": "Transfer successful"
+            "message": "Transfer successful",
+            "warning": warning
         })
 
     except Exception as e:

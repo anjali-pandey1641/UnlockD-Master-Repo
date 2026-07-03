@@ -4,6 +4,7 @@ import "./App.css";
 function App() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
 
   const [name, setName] = useState("");
   const [balance, setBalance] = useState("");
@@ -11,6 +12,11 @@ function App() {
   const [sender, setSender] = useState("");
   const [receiver, setReceiver] = useState("");
   const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("");
+
+  const [budgetAccount, setBudgetAccount] = useState("");
+  const [budgetCategory, setBudgetCategory] = useState("");
+  const [budgetLimit, setBudgetLimit] = useState("");
 
   async function fetchAccounts() {
     const response = await fetch("http://localhost:5000/accounts");
@@ -24,6 +30,12 @@ function App() {
     setTransactions(data);
   }
 
+  async function fetchBudgets() {
+    const response = await fetch("http://localhost:5000/budgets");
+    const data = await response.json();
+    setBudgets(data);
+  }
+
   async function createAccount() {
     const response = await fetch("http://localhost:5000/accounts", {
       method: "POST",
@@ -31,7 +43,7 @@ function App() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        name: name,
+        name,
         balance: Number(balance),
       }),
     });
@@ -39,10 +51,38 @@ function App() {
     if (response.ok) {
       setName("");
       setBalance("");
+
       fetchAccounts();
       fetchTransactions();
+      fetchBudgets();
     } else {
       alert("Failed to create account");
+    }
+  }
+
+  async function createBudget() {
+    const response = await fetch("http://localhost:5000/budgets", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account_id: Number(budgetAccount),
+        category: budgetCategory,
+        monthly_limit: Number(budgetLimit),
+      }),
+    });
+
+    if (response.ok) {
+      setBudgetAccount("");
+      setBudgetCategory("");
+      setBudgetLimit("");
+
+      fetchAccounts();
+      fetchTransactions();
+      fetchBudgets();
+    } else {
+      alert("Failed to create budget");
     }
   }
 
@@ -56,16 +96,25 @@ function App() {
         sender_id: Number(sender),
         receiver_id: Number(receiver),
         amount: Number(amount),
+        category,
       }),
     });
 
     if (response.ok) {
+      const data = await response.json();
+
+      if (data.warning) {
+        alert(data.warning);
+      }
+
       setSender("");
       setReceiver("");
       setAmount("");
+      setCategory("");
 
       fetchAccounts();
       fetchTransactions();
+      fetchBudgets();
     } else {
       alert("Transfer failed");
     }
@@ -74,6 +123,7 @@ function App() {
   useEffect(() => {
     fetchAccounts();
     fetchTransactions();
+    fetchBudgets();
   }, []);
 
   return (
@@ -96,9 +146,7 @@ function App() {
         onChange={(e) => setBalance(e.target.value)}
       />
 
-      <button onClick={createAccount}>
-        Create Account
-      </button>
+      <button onClick={createAccount}>Create Account</button>
 
       <hr />
 
@@ -109,7 +157,10 @@ function App() {
       ) : (
         accounts.map((account: any) => (
           <div key={account.id}>
-            <strong>#{account.id} {account.name}</strong> — ₹{account.balance}
+            <strong>
+              #{account.id} {account.name}
+            </strong>{" "}
+            — ₹{account.balance}
           </div>
         ))
       )}
@@ -139,9 +190,57 @@ function App() {
         onChange={(e) => setAmount(e.target.value)}
       />
 
-      <button onClick={transferMoney}>
-        Transfer
-      </button>
+      <input
+        type="text"
+        placeholder="Category"
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+      />
+
+      <button onClick={transferMoney}>Transfer</button>
+
+      <hr />
+
+      <h2>Create Budget</h2>
+
+      <input
+        type="number"
+        placeholder="Account ID"
+        value={budgetAccount}
+        onChange={(e) => setBudgetAccount(e.target.value)}
+      />
+
+      <input
+        type="text"
+        placeholder="Category"
+        value={budgetCategory}
+        onChange={(e) => setBudgetCategory(e.target.value)}
+      />
+
+      <input
+        type="number"
+        placeholder="Monthly Limit"
+        value={budgetLimit}
+        onChange={(e) => setBudgetLimit(e.target.value)}
+      />
+
+      <button onClick={createBudget}>Create Budget</button>
+
+      <hr />
+
+      <h2>Budgets</h2>
+
+      {budgets.length === 0 ? (
+        <p>No budgets yet.</p>
+      ) : (
+        budgets.map((budget: any) => (
+          <div key={budget.id}>
+            #{budget.account_id} | {budget.category} | Limit ₹
+            {budget.monthly_limit} | Spent ₹{budget.spent} | Remaining ₹
+            {budget.remaining}
+          </div>
+        ))
+      )}
 
       <hr />
 
@@ -152,8 +251,7 @@ function App() {
       ) : (
         transactions.map((tx: any) => (
           <div key={tx.id}>
-            #{tx.id} | {tx.sender_id} → {tx.receiver_id} | ₹{tx.amount} |{" "}
-            {tx.status}
+            #{tx.id} | {tx.sender_id} → {tx.receiver_id} | {tx.category} | ₹{tx.amount} | {tx.status}
           </div>
         ))
       )}

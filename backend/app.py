@@ -2,12 +2,14 @@ from flask import Flask
 from flask_cors import CORS
 from schema import create_tables
 from routes.transaction import transactions
+from routes.budget import budgets
 app = Flask(__name__)
 CORS(app)
 
 create_tables()
 
 app.register_blueprint(transactions)
+app.register_blueprint(budgets)
 
 @app.get("/")
 def home():
