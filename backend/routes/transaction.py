@@ -1,5 +1,8 @@
 from flask import Blueprint, request, jsonify
 from db import get_connection
+import csv
+from io import StringIO
+from flask import Response
 
 transactions = Blueprint("transactions", __name__)
 
@@ -8,17 +11,38 @@ transactions = Blueprint("transactions", __name__)
 def get_transactions():
     conn, cur = get_connection()
 
+    search = request.args.get("search", "")
+    category = request.args.get("category", "")
+
     cur.execute("""
     SELECT id,
-           sender_id,
-           receiver_id,
-           amount,
-           category,
-           status,
-           created_at
+        sender_id,
+        receiver_id,
+        amount,
+        category,
+        description,
+        merchant,
+        status,
+        created_at
     FROM transactions
+    WHERE
+    (
+        COALESCE(description, '') ILIKE %s
+        OR COALESCE(merchant, '') ILIKE %s
+    )
+    AND
+    (
+        %s = ''
+        OR category = %s
+    )
     ORDER BY created_at DESC
-""")
+    """,
+    (
+        f"%{search}%",
+        f"%{search}%",
+        category,
+        category
+    ))
 
     rows = cur.fetchall()
 
@@ -29,14 +53,16 @@ def get_transactions():
 
     for row in rows:
         data.append({
-            "id": row[0],
-            "sender_id": row[1],
-            "receiver_id": row[2],
-            "amount": float(row[3]),
-            "category": row[4],
-            "status": row[5],
-            "created_at": str(row[6])
-        })
+        "id": row[0],
+        "sender_id": row[1],
+        "receiver_id": row[2],
+        "amount": float(row[3]),
+        "category": row[4],
+        "description": row[5],
+        "merchant": row[6],
+        "status": row[7],
+        "created_at": str(row[8])
+    })
 
     return jsonify(data)
 
@@ -73,7 +99,6 @@ def get_accounts():
 @transactions.post("/accounts")
 def create_account():
     data = request.get_json()
-
     name = data["name"]
     balance = float(data["balance"])
 
@@ -115,6 +140,9 @@ def transfer():
     receiver = data["receiver_id"]
     amount = float(data["amount"])
     category = data["category"]
+
+    description = data.get("description")
+    merchant = data.get("merchant")
 
     if amount <= 0:
         return jsonify({"error": "Amount must be greater than zero"}), 400
@@ -159,13 +187,29 @@ def transfer():
         )
 
         cur.execute(
-            """
-            INSERT INTO transactions
-            (sender_id, receiver_id, amount, category, status)
-            VALUES (%s, %s, %s, %s, %s)
-            """,
-            (sender, receiver, amount, category, "SUCCESS")
-        )
+    """
+    INSERT INTO transactions
+    (
+        sender_id,
+        receiver_id,
+        amount,
+        category,
+        description,
+        merchant,
+        status
+    )
+    VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """,
+    (
+        sender,
+        receiver,
+        amount,
+        category,
+        description,
+        merchant,
+        "SUCCESS"
+    )
+)
 
         cur.execute(
             """
@@ -215,3 +259,48 @@ def transfer():
     finally:
         cur.close()
         conn.close()
+@transactions.get("/transactions/export")
+def export_transactions():
+    conn, cur = get_connection()
+
+    cur.execute("""
+        SELECT
+            id,
+            sender_id,
+            receiver_id,
+            amount,
+            category,
+            status,
+            created_at
+        FROM transactions
+        ORDER BY created_at DESC
+    """)
+
+    rows = cur.fetchall()
+
+    output = StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "ID",
+        "Sender",
+        "Receiver",
+        "Amount",
+        "Category",
+        "Status",
+        "Created"
+    ])
+
+    writer.writerows(rows)
+
+    cur.close()
+    conn.close()
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition":
+            "attachment; filename=transactions.csv"
+        }
+    )

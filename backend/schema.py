@@ -24,6 +24,15 @@ def create_tables():
     );
     """)
     cur.execute("""
+    ALTER TABLE transactions
+    ADD COLUMN IF NOT EXISTS description VARCHAR(255);
+    """)
+
+    cur.execute("""
+    ALTER TABLE transactions
+    ADD COLUMN IF NOT EXISTS merchant VARCHAR(255);
+    """)
+    cur.execute("""
 CREATE TABLE IF NOT EXISTS groups (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
