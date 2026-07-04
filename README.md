@@ -186,22 +186,6 @@ GET /analytics
 
 ---
 
-# 📸 Screenshots
-
-> Add screenshots of the dashboard here.
-
-Example:
-
-```
-screenshots/
-├── dashboard.png
-├── transfer.png
-├── budgets.png
-├── analytics.png
-```
-
----
-
 # 📋 Future Improvements
 
 - PDF bank statement import
