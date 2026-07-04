@@ -9,13 +9,6 @@ def create_group():
     name = data["name"]
 
     conn, cur = get_connection()
-    cur.execute(
-    """
-    DELETE FROM settlements
-    WHERE group_id = %s
-    """,
-    (group_id,)
-)
     try:
         cur.execute(
             """
@@ -159,8 +152,7 @@ def create_expense(group_id):
             total = 0
 
             for split in splits:
-                total += float(split["amount"])
-
+                total += Decimal(split["amount"])
             if total != amount:
                 return jsonify({
                     "error": "Custom split total must equal expense amount"

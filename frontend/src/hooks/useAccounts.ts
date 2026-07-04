@@ -14,9 +14,9 @@ export function useAccounts() {
   }
 
   async function addAccount() {
-    const ok = await createAccount(name, Number(balance));
+    const response = await createAccount(name, Number(balance));
 
-    if (!ok) {
+    if (!response.ok) {
       alert("Failed");
       return;
     }

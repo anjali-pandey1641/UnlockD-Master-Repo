@@ -12,7 +12,7 @@ def create_budget():
 
     account_id = data["account_id"]
     category = data["category"]
-    Decimal(data["monthly_limit"])
+    monthly_limit = Decimal(data["monthly_limit"])
 
     now = datetime.now()
 

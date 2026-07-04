@@ -8,6 +8,30 @@ from decimal import Decimal
 
 transactions = Blueprint("transactions", __name__)
 
+MERCHANT_CATEGORY = {
+    "dominoes": "Food",
+    "dominos": "Food",
+    "zomato": "Food",
+    "swiggy": "Food",
+    "mcdonalds": "Food",
+    "pizza hut": "Food",
+
+    "amazon": "Shopping",
+    "flipkart": "Shopping",
+    "myntra": "Shopping",
+
+    "uber": "Travel",
+    "ola": "Travel",
+
+    "netflix": "Entertainment",
+    "spotify": "Entertainment",
+    "youtube": "Entertainment",
+
+    "electricity": "Bills",
+    "water": "Bills",
+    "airtel": "Bills",
+    "jio": "Bills",
+}
 
 @transactions.get("/transactions")
 def get_transactions():
@@ -42,7 +66,7 @@ JOIN accounts r
     AND
     (
         %s = ''
-        OR category = %s
+        OR LOWER(COALESCE(category, '')) = LOWER(%s)
     )
     ORDER BY created_at DESC
     """,
@@ -276,11 +300,12 @@ def export_transactions():
 
     cur.execute("""
         SELECT
-            id,
             sender_id,
             receiver_id,
             amount,
             category,
+            description,
+            merchant,
             status,
             created_at
         FROM transactions
@@ -293,14 +318,15 @@ def export_transactions():
     writer = csv.writer(output)
 
     writer.writerow([
-        "ID",
-        "Sender",
-        "Receiver",
-        "Amount",
-        "Category",
-        "Status",
-        "Created"
-    ])
+    "sender_id",
+    "receiver_id",
+    "amount",
+    "category",
+    "description",
+    "merchant",
+    "status",
+    "created_at"
+])
 
     writer.writerows(rows)
 
@@ -331,6 +357,16 @@ def import_transactions():
 
     try:
         for row in reader:
+            if not row.get("sender_id"):
+                continue
+            merchant = (row.get("merchant") or "").strip().lower()
+
+            merchant = (row.get("merchant") or "").strip().lower()
+
+            category = row.get("category")
+
+            if not category:
+                category = MERCHANT_CATEGORY.get(merchant, "Other")
             cur.execute(
                 """
                 INSERT INTO transactions
@@ -346,14 +382,14 @@ def import_transactions():
                 VALUES (%s,%s,%s,%s,%s,%s,%s)
                 """,
                 (
-                    int(row["sender_id"]),
-                    int(row["receiver_id"]),
-                    float(row["amount"]),
-                    row["category"],
-                    row.get("description"),
-                    row.get("merchant"),
-                    "IMPORTED"
-                )
+                int(row["sender_id"]),
+                int(row["receiver_id"]),
+                Decimal(row["amount"]),
+                category,
+                row.get("description"),
+                row.get("merchant"),
+                row.get("status", "IMPORTED"),
+            )
             )
 
             imported += 1

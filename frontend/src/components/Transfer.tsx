@@ -1,4 +1,6 @@
 type Props = {
+  accounts: any[];
+
   sender: string;
   receiver: string;
   amount: string;
@@ -17,6 +19,7 @@ type Props = {
 };
 
 export default function Transfer({
+  accounts,
   sender,
   receiver,
   amount,
@@ -36,19 +39,25 @@ export default function Transfer({
       <h2>Transfer Money</h2>
 
       <div className="form-row">
-        <input
-          type="number"
-          placeholder="Sender ID"
-          value={sender}
-          onChange={(e) => setSender(e.target.value)}
-        />
+        <select value={sender} onChange={(e) => setSender(e.target.value)}>
+          <option value="">Select Sender</option>
 
-        <input
-          type="number"
-          placeholder="Receiver ID"
-          value={receiver}
-          onChange={(e) => setReceiver(e.target.value)}
-        />
+          {accounts.map((account: any) => (
+            <option key={account.id} value={account.id}>
+              {account.name} (#{account.id})
+            </option>
+          ))}
+        </select>
+
+        <select value={receiver} onChange={(e) => setReceiver(e.target.value)}>
+          <option value="">Select Receiver</option>
+
+          {accounts.map((account: any) => (
+            <option key={account.id} value={account.id}>
+              {account.name} (#{account.id})
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="form-row">

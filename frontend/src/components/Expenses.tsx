@@ -1,4 +1,6 @@
 type Props = {
+  accounts: any[];
+  groups: any[];
   expenseGroup: string;
   payerId: string;
   description: string;
@@ -23,6 +25,8 @@ type Props = {
 };
 
 export default function Expenses({
+  accounts,
+  groups,
   expenseGroup,
   payerId,
   description,
@@ -50,17 +54,28 @@ export default function Expenses({
       <h2>Create Expense</h2>
 
       <div className="form-row">
-        <input
-          placeholder="Group ID"
+        <select
           value={expenseGroup}
           onChange={(e) => setExpenseGroup(e.target.value)}
-        />
+        >
+          <option value="">Select Group</option>
 
-        <input
-          placeholder="Payer ID"
-          value={payerId}
-          onChange={(e) => setPayerId(e.target.value)}
-        />
+          {groups.map((group: any) => (
+            <option key={group.id} value={group.id}>
+              {group.name}
+            </option>
+          ))}
+        </select>
+
+        <select value={payerId} onChange={(e) => setPayerId(e.target.value)}>
+          <option value="">Select Payer</option>
+
+          {accounts.map((account: any) => (
+            <option key={account.id} value={account.id}>
+              {account.name} (#{account.id})
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="form-row">

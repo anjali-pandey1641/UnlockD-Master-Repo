@@ -30,9 +30,13 @@ function App() {
 
       <Accounts {...accounts} />
 
-      <Groups {...groups} />
+      <Groups {...groups} accounts={accounts.accounts} />
 
-      <Expenses {...groups} />
+      <Expenses
+        {...groups}
+        accounts={accounts.accounts}
+        groups={groups.groups}
+      />
 
       <Settlements
         settlements={groups.settlements}
@@ -40,10 +44,9 @@ function App() {
         markPaid={groups.markPaid}
       />
 
-      <Transfer {...transactions} />
+      <Transfer {...transactions} accounts={accounts.accounts} />
 
-      <Budgets {...budgets} />
-
+      <Budgets {...budgets} accounts={accounts.accounts} />
       <Transactions {...transactions} />
 
       <Analytics

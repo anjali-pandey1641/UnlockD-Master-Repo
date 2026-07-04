@@ -1,5 +1,6 @@
 type Props = {
   budgets: any[];
+  accounts: any[];
 
   budgetAccount: string;
   budgetCategory: string;
@@ -14,6 +15,7 @@ type Props = {
 
 export default function Budgets({
   budgets,
+  accounts,
   budgetAccount,
   budgetCategory,
   budgetLimit,
@@ -23,79 +25,75 @@ export default function Budgets({
   createBudget,
 }: Props) {
   return (
-  <div className="card">
-    <h2>Create Budget</h2>
+    <div className="card">
+      <h2>Create Budget</h2>
 
-    <div className="form-row">
-      <input
-        type="number"
-        placeholder="Account ID"
-        value={budgetAccount}
-        onChange={(e) => setBudgetAccount(e.target.value)}
-      />
+      <div className="form-row">
+        <select
+          value={budgetAccount}
+          onChange={(e) => setBudgetAccount(e.target.value)}
+        >
+          <option value="">Select Account</option>
 
-      <input
-        type="text"
-        placeholder="Category"
-        value={budgetCategory}
-        onChange={(e) => setBudgetCategory(e.target.value)}
-      />
+          {accounts.map((account: any) => (
+            <option key={account.id} value={account.id}>
+              {account.name} (#{account.id})
+            </option>
+          ))}
+        </select>
 
-      <input
-        type="number"
-        placeholder="Monthly Limit"
-        value={budgetLimit}
-        onChange={(e) => setBudgetLimit(e.target.value)}
-      />
-    </div>
+        <input
+          type="text"
+          placeholder="Category"
+          value={budgetCategory}
+          onChange={(e) => setBudgetCategory(e.target.value)}
+        />
 
-    <div className="button-row">
-      <button onClick={createBudget}>
-        Create Budget
-      </button>
-    </div>
+        <input
+          type="number"
+          placeholder="Monthly Limit"
+          value={budgetLimit}
+          onChange={(e) => setBudgetLimit(e.target.value)}
+        />
+      </div>
 
-    <h2 style={{ marginTop: "28px" }}>Budgets</h2>
+      <div className="button-row">
+        <button onClick={createBudget}>Create Budget</button>
+      </div>
 
-    {budgets.length === 0 ? (
-      <p>No budgets yet.</p>
-    ) : (
-      budgets.map((budget: any) => {
-        const percent =
-          budget.monthly_limit === 0
-            ? 0
-            : Math.min(
-                (budget.spent / budget.monthly_limit) * 100,
-                100,
-              );
+      <h2 style={{ marginTop: "28px" }}>Budgets</h2>
 
-        return (
-          <div
-            key={budget.id}
-            style={{ marginBottom: "20px" }}
-          >
-            <strong>
-              #{budget.account_id} • {budget.category}
-            </strong>
+      {budgets.length === 0 ? (
+        <p>No budgets yet.</p>
+      ) : (
+        budgets.map((budget: any) => {
+          const percent =
+            budget.monthly_limit === 0
+              ? 0
+              : Math.min((budget.spent / budget.monthly_limit) * 100, 100);
 
-            <p>
-              ₹{budget.spent} / ₹{budget.monthly_limit}
-            </p>
+          return (
+            <div key={budget.id} style={{ marginBottom: "20px" }}>
+              <strong>
+                #{budget.account_id} • {budget.category}
+              </strong>
 
-            <div className="progress">
-              <div
-                className="progress-fill"
-                style={{ width: `${percent}%` }}
-              />
+              <p>
+                ₹{budget.spent} / ₹{budget.monthly_limit}
+              </p>
+
+              <div className="progress">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+
+              <small>Remaining ₹{budget.remaining}</small>
             </div>
-
-            <small>
-              Remaining ₹{budget.remaining}
-            </small>
-          </div>
-        );
-      })
-    )}
-  </div>
-);
+          );
+        })
+      )}
+    </div>
+  );
 }

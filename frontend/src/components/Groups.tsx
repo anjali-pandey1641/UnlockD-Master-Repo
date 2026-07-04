@@ -1,6 +1,7 @@
 type Props = {
   groups: any[];
   members: any[];
+  accounts: any[];
 
   groupName: string;
   groupId: string;
@@ -18,6 +19,7 @@ type Props = {
 export default function Groups({
   groups,
   members,
+  accounts,
   groupName,
   groupId,
   memberAccount,
@@ -70,11 +72,18 @@ export default function Groups({
           onChange={(e) => setGroupId(e.target.value)}
         />
 
-        <input
-          placeholder="Account ID"
+        <select
           value={memberAccount}
           onChange={(e) => setMemberAccount(e.target.value)}
-        />
+        >
+          <option value="">Select Account</option>
+
+          {accounts.map((account: any) => (
+            <option key={account.id} value={account.id}>
+              {account.name} (#{account.id})
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="button-row">
@@ -97,7 +106,7 @@ export default function Groups({
                 borderBottom: "1px solid #e5e7eb",
               }}
             >
-              👤 Account #{m.account_id}
+              👤 {m.name ?? `Account #${m.account_id}`}
             </div>
           ))}
         </>

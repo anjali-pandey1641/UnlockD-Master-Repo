@@ -51,6 +51,7 @@ export function useGroups() {
     if (response.ok) {
       setGroupName("");
       loadGroups();
+      window.location.reload();
     } else {
       alert("Failed to create group");
     }
@@ -65,6 +66,7 @@ export function useGroups() {
     if (response.ok) {
       setMemberAccount("");
       loadMembers(Number(groupId));
+      window.location.reload();
     } else {
       alert("Failed to add member");
     }

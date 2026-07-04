@@ -6,11 +6,7 @@ type Props = {
   importStatement: () => void;
 };
 
-export default function Analytics({
-  file,
-  setFile,
-  importStatement,
-}: Props) {
+export default function Analytics({ file, setFile, importStatement }: Props) {
   const analytics = useAnalytics();
 
   return (
@@ -28,9 +24,7 @@ export default function Analytics({
           }}
         />
 
-        <button onClick={importStatement}>
-          Import Statement
-        </button>
+        <button onClick={importStatement}>Import Statement</button>
       </div>
 
       <div className="stats">
@@ -54,6 +48,22 @@ export default function Analytics({
           <p>Most Used Category</p>
         </div>
       </div>
+      <h2 style={{ marginTop: "30px" }}>Spending by Category</h2>
+
+      {analytics.category_spending.map((item: any) => (
+        <div key={item.category} style={{ marginBottom: "18px" }}>
+          <strong>{item.category}</strong>
+          <div className="progress">
+            <div
+              className="progress-fill"
+              style={{
+                width: `${Math.min(item.amount / 20, 100)}%`,
+              }}
+            />
+          </div>
+          <small>₹{item.amount}</small>
+        </div>
+      ))}
     </div>
   );
 }

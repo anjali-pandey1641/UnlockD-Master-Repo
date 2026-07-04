@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   fetchTransactions,
   transferMoney,
@@ -20,10 +20,10 @@ export function useTransactions() {
 
   const [file, setFile] = useState<File | null>(null);
 
-  async function loadTransactions() {
+  const loadTransactions = useCallback(async () => {
     const data = await fetchTransactions(search, searchCategory);
     setTransactions(data);
-  }
+  }, [search, searchCategory]);
 
   async function doTransfer() {
     const response = await transferMoney(
@@ -49,7 +49,7 @@ export function useTransactions() {
       setDescription("");
       setMerchant("");
 
-      loadTransactions();
+      await loadTransactions();
     } else {
       alert("Transfer failed");
     }
@@ -61,8 +61,12 @@ export function useTransactions() {
     const response = await importStatement(file);
 
     if (response.ok) {
-      alert("Imported!");
-      loadTransactions();
+      const data = await response.json();
+      alert(`Imported ${data.count} rows`);
+
+      setFile(null);
+
+      await loadTransactions();
     } else {
       alert("Import failed");
     }
@@ -70,7 +74,7 @@ export function useTransactions() {
 
   useEffect(() => {
     loadTransactions();
-  }, []);
+  }, [loadTransactions]);
 
   return {
     transactions,
